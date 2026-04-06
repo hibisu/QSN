@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="Quantum-Safe Agent Channel POC — ML-KEM-768, ML-DSA-65, AES-256-GCM by Biswajit De."/>
+<title>QSN · Quantum-Safe Agent Channel</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#020b14;--panel:#040f1c;--border:#0d2a3f;
+  --cyan:#00d4ff;--cyan-dim:#0077aa;--green:#00ff88;
+  --gold:#ffd700;--red:#ff3366;--purple:#b060ff;
+  --text:#c8e8ff;--text-dim:#4a7a99;
+  --mono:'Share Tech Mono',monospace;
+  --display:'Orbitron',sans-serif;
+  --body:'Inter',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);line-height:1.6;}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:
+    repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,212,255,0.025) 40px),
+    repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,212,255,0.015) 40px),
+    radial-gradient(ellipse at 15% 10%,rgba(0,212,255,0.06) 0%,transparent 50%),
+    radial-gradient(ellipse at 85% 90%,rgba(176,96,255,0.05) 0%,transparent 50%);
+}
+.wrap{position:relative;z-index:1;max-width:900px;margin:0 auto;padding:0 24px;}
+
+nav{
+  position:sticky;top:0;z-index:100;
+  background:rgba(2,11,20,0.92);backdrop-filter:blur(12px);
+  border-bottom:1px solid var(--border);padding:14px 0;
+}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;max-width:900px;margin:0 auto;padding:0 24px;}
+.nav-logo{font-family:var(--display);font-size:13px;font-weight:900;color:var(--cyan);letter-spacing:3px;text-decoration:none;text-shadow:0 0 14px rgba(0,212,255,0.5);}
+.nav-links{display:flex;gap:24px;}
+.nav-links a{font-family:var(--mono);font-size:10px;letter-spacing:2px;color:var(--text-dim);text-decoration:none;transition:color .2s;}
+.nav-links a:hover{color:var(--cyan);}
+
+.hero{padding:80px 0 60px;text-align:center;}
+.hero-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:4px;color:var(--cyan);margin-bottom:16px;opacity:.8;}
+.hero-title{font-family:var(--display);font-size:clamp(26px,5vw,50px);font-weight:900;color:var(--cyan);letter-spacing:4px;text-shadow:0 0 40px rgba(0,212,255,0.5);line-height:1.1;margin-bottom:12px;animation:float 4s ease-in-out infinite;}
+.hero-sub{font-family:var(--display);font-size:clamp(11px,2vw,14px);font-weight:400;color:var(--text-dim);letter-spacing:3px;margin-bottom:20px;}
+.hero-desc{font-size:14px;color:var(--text);max-width:600px;margin:0 auto 32px;line-height:1.9;opacity:.85;}
+.hero-pills{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-bottom:40px;}
+.pill{display:inline-block;padding:4px 12px;border-radius:20px;font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:1px;}
+.p-cyan{background:rgba(0,212,255,0.1);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);}
+.p-green{background:rgba(0,255,136,0.1);color:var(--green);border:1px solid rgba(0,255,136,0.3);}
+.p-gold{background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+.p-purple{background:rgba(176,96,255,0.1);color:var(--purple);border:1px solid rgba(176,96,255,0.3);}
+
+.cta-row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:6px;text-decoration:none;font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:2px;transition:all .25s;border:none;cursor:pointer;}
+.btn-primary{background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);}
+.btn-primary:hover{background:rgba(0,212,255,0.2);box-shadow:0 0 24px rgba(0,212,255,0.4);transform:translateY(-2px);}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text-dim);}
+.btn-ghost:hover{border-color:var(--text-dim);color:var(--text);transform:translateY(-2px);}
+
+.divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:50px 0;}
+
+.section{padding:10px 0 40px;}
+.sec-label{font-family:var(--mono);font-size:9px;letter-spacing:4px;color:var(--cyan);margin-bottom:8px;}
+.sec-title{font-family:var(--display);font-size:clamp(15px,2.5vw,20px);font-weight:900;color:var(--text);letter-spacing:2px;margin-bottom:14px;}
+.sec-body{font-size:13px;color:var(--text-dim);max-width:680px;line-height:1.9;margin-bottom:24px;}
+
+/* TECH CARDS */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;}
+.tech-card{background:var(--panel);border-radius:6px;padding:18px;border:1px solid var(--border);border-top-width:2px;transition:transform .2s;}
+.tech-card:hover{transform:translateY(-3px);}
+.tc-icon{font-size:24px;margin-bottom:10px;}
+.tc-label{font-family:var(--mono);font-size:8px;letter-spacing:2px;margin-bottom:4px;}
+.tc-name{font-family:var(--display);font-size:11px;font-weight:700;margin-bottom:6px;}
+.tc-body{font-size:11px;color:var(--text-dim);line-height:1.7;}
+
+/* FLOW STEPS */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;}
+.flow-card{background:var(--panel);border:1px solid var(--border);border-radius:6px;padding:14px;border-top-width:2px;}
+.fc-num{font-family:var(--display);font-size:22px;font-weight:900;opacity:.15;margin-bottom:4px;}
+.fc-title{font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:1px;margin-bottom:6px;}
+.fc-body{font-size:10px;color:var(--text-dim);line-height:1.7;}
+
+/* DEMO BOX */
+.demo-box{background:var(--panel);border:1px solid rgba(0,212,255,0.2);border-radius:8px;overflow:hidden;}
+.demo-header{display:flex;align-items:center;gap:10px;padding:12px 20px;background:rgba(0,212,255,0.05);border-bottom:1px solid var(--border);}
+.demo-dots{display:flex;gap:6px;}
+.demo-dot{width:10px;height:10px;border-radius:50%;}
+.demo-bar-title{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-left:4px;letter-spacing:2px;}
+.demo-body{padding:36px 24px;text-align:center;}
+.demo-icon{font-size:52px;margin-bottom:16px;}
+.demo-desc{font-size:13px;color:var(--text-dim);max-width:460px;margin:0 auto 28px;line-height:1.9;}
+
+/* AUTHOR */
+.author-box{display:flex;align-items:center;gap:20px;background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:24px;}
+.author-avatar{width:64px;height:64px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,rgba(0,212,255,0.2),rgba(176,96,255,0.2));border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:28px;}
+.author-name{font-family:var(--display);font-size:13px;font-weight:900;color:var(--cyan);letter-spacing:2px;margin-bottom:4px;}
+.author-role{font-size:12px;color:var(--text-dim);margin-bottom:8px;}
+.author-bio{font-size:11px;color:var(--text-dim);line-height:1.8;}
+
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s ease-in-out infinite;display:inline-block;margin-right:6px;}
+
+footer{border-top:1px solid var(--border);padding:28px 0;text-align:center;font-family:var(--mono);font-size:9px;color:var(--text-dim);letter-spacing:2px;}
+.footer-links{display:flex;gap:24px;justify-content:center;margin-bottom:10px;flex-wrap:wrap;}
+.footer-links a{color:var(--cyan);text-decoration:none;}
+.footer-links a:hover{text-decoration:underline;}
+
+@media(max-width:600px){
+  .author-box{flex-direction:column;text-align:center;}
+  .nav-links{display:none;}
+  .hero{padding:50px 0 36px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="#">⬡ QSN</a>
+    <div class="nav-links">
+      <a href="#why">WHY QSN</a>
+      <a href="#tech">TECHNOLOGY</a>
+      <a href="#demo">DEMO</a>
+      <a href="#author">AUTHOR</a>
+    </div>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-eyebrow">⬡ PROOF OF CONCEPT · AI AGENT SECURITY</div>
+    <div class="hero-title">QUANTUM-SAFE<br/>AGENT CHANNEL</div>
+    <div class="hero-sub">POST-QUANTUM CRYPTOGRAPHY FOR AI AGENT NETWORKS</div>
+    <div class="hero-desc">
+      A proof-of-concept demonstrating two AI agents communicating over a
+      quantum-safe encrypted channel — using NIST-standardized post-quantum
+      algorithms to secure agent identity, key establishment, and message integrity.
+    </div>
+    <div class="hero-pills">
+      <span class="pill p-cyan">ML-KEM-768 · KEY ESTABLISHMENT</span>
+      <span class="pill p-gold">ML-DSA-65 · SIGN / IDENTITY</span>
+      <span class="pill p-green">AES-256-GCM · ENCRYPTION</span>
+      <span class="pill p-purple">NIST FIPS 203 / 204</span>
+    </div>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="cfp-qsn-poc.html" target="_blank">⬡ LAUNCH LIVE DEMO</a>
+      <a class="btn btn-ghost" href="https://github.com/hibisu/QSN" target="_blank">⌥ VIEW ON GITHUB</a>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- WHY -->
+  <div class="section" id="why">
+    <div class="sec-label">MOTIVATION</div>
+    <div class="sec-title">WHY QUANTUM-SAFE CHANNELS MATTER FOR AI AGENTS</div>
+    <div class="sec-body">
+      Today's AI agents communicate over TLS channels secured by RSA and ECDH —
+      algorithms that a fault-tolerant quantum computer will break using Shor's algorithm,
+      potentially within 5–15 years.<br/><br/>
+      Adversaries are already collecting encrypted traffic today to decrypt later —
+      known as the <strong style="color:var(--red)">harvest-now, decrypt-later</strong> attack.
+      Agent networks handling sensitive data need quantum-safe channels <em>now</em>, not at Q-Day.<br/><br/>
+      This POC demonstrates what that looks like in practice — two live AI agents
+      running a full post-quantum handshake, exchanging encrypted and signed messages,
+      and surviving a simulated quantum attack.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- TECH -->
+  <div class="section" id="tech">
+    <div class="sec-label">TECHNOLOGY</div>
+    <div class="sec-title">THREE ALGORITHMS, ONE SECURE CHANNEL</div>
+    <div class="tech-grid">
+      <div class="tech-card" style="border-top-color:var(--cyan)">
+        <div class="tc-icon">🔑</div>
+        <div class="tc-label" style="color:var(--cyan)">NIST FIPS 203</div>
+        <div class="tc-name" style="color:var(--cyan)">ML-KEM-768</div>
+        <div class="tc-body">Key encapsulation mechanism based on Module-LWE lattice problem. Establishes a shared secret between agents. Resistant to Shor's algorithm. Security Level 3.</div>
+      </div>
+      <div class="tech-card" style="border-top-color:var(--gold)">
+        <div class="tc-icon">🪪</div>
+        <div class="tc-label" style="color:var(--gold)">NIST FIPS 204</div>
+        <div class="tc-name" style="color:var(--gold)">ML-DSA-65</div>
+        <div class="tc-body">Digital signature algorithm for agent identity and message signing. Every message is signed before encryption — guaranteeing authenticity and non-repudiation.</div>
+      </div>
+      <div class="tech-card" style="border-top-color:var(--green)">
+        <div class="tc-icon">🔐</div>
+        <div class="tc-label" style="color:var(--green)">SYMMETRIC ENCRYPTION</div>
+        <div class="tc-name" style="color:var(--green)">AES-256-GCM</div>
+        <div class="tc-body">Authenticated encryption for message payload. Per-message IV derived from session. Key derived from ML-KEM-768 shared secret. Zero IV reuse guaranteed.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- HOW IT WORKS -->
+  <div class="section">
+    <div class="sec-label">HOW IT WORKS</div>
+    <div class="sec-title">FROM HANDSHAKE TO SECURE MESSAGE</div>
+    <div class="flow">
+      <div class="flow-card" style="border-top-color:var(--cyan)">
+        <div class="fc-num" style="color:var(--cyan)">01</div>
+        <div class="fc-title" style="color:var(--cyan)">KEY GENERATION</div>
+        <div class="fc-body">Each agent generates an ML-KEM-768 keypair for key establishment and an ML-DSA-65 keypair for identity signing.</div>
+      </div>
+      <div class="flow-card" style="border-top-color:var(--purple)">
+        <div class="fc-num" style="color:var(--purple)">02</div>
+        <div class="fc-title" style="color:var(--purple)">SHARED SECRET</div>
+        <div class="fc-body">Agents run ML-KEM-768 encapsulation. A shared secret is derived. An AES-256-GCM session key is derived from that secret.</div>
+      </div>
+      <div class="flow-card" style="border-top-color:var(--gold)">
+        <div class="fc-num" style="color:var(--gold)">03</div>
+        <div class="fc-title" style="color:var(--gold)">SIGN THEN ENCRYPT</div>
+        <div class="fc-body">Each message is ML-DSA-65 signed first, then AES-256-GCM encrypted. A message counter prevents replay attacks.</div>
+      </div>
+      <div class="flow-card" style="border-top-color:var(--green)">
+        <div class="fc-num" style="color:var(--green)">04</div>
+        <div class="fc-title" style="color:var(--green)">AUDIT LOGGED</div>
+        <div class="fc-body">Every handshake and message event is written to a tamper-evident audit trail with timestamps and signature references.</div>
+      </div>
+      <div class="flow-card" style="border-top-color:var(--red)">
+        <div class="fc-num" style="color:var(--red)">05</div>
+        <div class="fc-title" style="color:var(--red)">ATTACK SIMULATED</div>
+        <div class="fc-body">Shor's algorithm is simulated against the session. Classical RSA breaks instantly. ML-KEM-768 lattice keys hold.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- DEMO -->
+  <div class="section" id="demo">
+    <div class="sec-label">INTERACTIVE POC</div>
+    <div class="sec-title">TWO AI AGENTS · ONE QUANTUM-SAFE CHANNEL</div>
+    <div class="demo-box">
+      <div class="demo-header">
+        <div class="demo-dots">
+          <div class="demo-dot" style="background:#ff5f57"></div>
+          <div class="demo-dot" style="background:#febc2e"></div>
+          <div class="demo-dot" style="background:#28c840"></div>
+        </div>
+        <div class="demo-bar-title"><span class="live-dot"></span>QUANTUM-SAFE AGENT CHANNEL · CONCEPTUAL POC</div>
+      </div>
+      <div class="demo-body">
+        <div class="demo-icon">⬡</div>
+        <div style="font-family:var(--display);font-size:13px;font-weight:900;color:var(--cyan);letter-spacing:3px;margin-bottom:14px;">LIVE INTERACTIVE DEMO</div>
+        <div class="demo-desc">
+          Run a real PQC handshake between two Claude-powered AI agents.
+          Watch encrypted and signed messages flow in real time.
+          Simulate a quantum attack and see ML-KEM-768 hold where RSA-2048 breaks.
+        </div>
+        <a class="btn btn-primary" href="cfp-qsn-poc.html" target="_blank">⬡ LAUNCH DEMO</a>
+        <div style="margin-top:16px;font-family:var(--mono);font-size:9px;color:var(--text-dim);">Requires Anthropic API key for AI agent dialogue · Runs entirely in your browser</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- AUTHOR -->
+  <div class="section" id="author">
+    <div class="sec-label">AUTHOR</div>
+    <div class="sec-title">ABOUT</div>
+    <div class="author-box">
+      <div class="author-avatar">👤</div>
+      <div>
+        <div class="author-name">BISWAJIT DE</div>
+        <div class="author-role">Cloud Solution Architect · Microsoft &nbsp;|&nbsp; Architect · Simplifier · Partner</div>
+        <div class="author-bio">
+          ~25 years of enterprise architecture experience including ~20 years in carrier network management at AT&amp;T.
+          This POC explores the application of NIST-standardized post-quantum cryptography
+          to AI agent communication — an area where current frameworks offer no built-in protection.
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <a class="btn btn-ghost" style="padding:6px 14px;font-size:9px;" href="https://linkedin.com/in/biswajitde" target="_blank">💼 LINKEDIN</a>
+          <a class="btn btn-ghost" style="padding:6px 14px;font-size:9px;" href="https://github.com/hibisu" target="_blank">⌥ GITHUB</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+</div>
+
+<footer>
+  <div class="footer-links">
+    <a href="cfp-qsn-poc.html">LIVE DEMO</a>
+    <a href="https://github.com/hibisu/QSN">GITHUB REPO</a>
+    <a href="https://linkedin.com/in/biswajitde">LINKEDIN</a>
+  </div>
+  <div>© 2026 BISWAJIT DE &nbsp;·&nbsp; NIST-STANDARDIZED PQC (ML-KEM / ML-DSA) &nbsp;·&nbsp; CONCEPTUAL POC</div>
+</footer>
+
+</body>
+</html>
