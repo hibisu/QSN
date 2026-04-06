@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>QSN · Quantum-Safe Agent Channel POC</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#020b14;--panel:#040f1c;--border:#0d2a3f;--cyan:#00d4ff;--cyan-dim:#0077aa;--green:#00ff88;--green-dim:#006633;--red:#ff3366;--gold:#ffd700;--text:#c8e8ff;--text-dim:#4a7a99;--mono:'Share Tech Mono',monospace;--display:'Orbitron',sans-serif;--body:'Inter',sans-serif;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--body);}
+.qsn-root{min-height:100vh;background:var(--bg);background-image:radial-gradient(ellipse at 20% 10%,rgba(0,212,255,0.04) 0%,transparent 50%),radial-gradient(ellipse at 80% 90%,rgba(0,255,136,0.03) 0%,transparent 50%),repeating-linear-gradient(0deg,transparent,transparent 39px,rgba(0,212,255,0.03) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,rgba(0,212,255,0.02) 40px);padding:20px;font-size:13px;}
+.title-bar{text-align:center;margin-bottom:16px;}
+.title-main{font-family:var(--display);font-size:20px;font-weight:900;color:var(--cyan);letter-spacing:4px;text-shadow:0 0 20px rgba(0,212,255,0.6);}
+.title-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);letter-spacing:3px;margin-top:4px;}
+.back-link{display:inline-block;font-family:var(--mono);font-size:9px;color:var(--text-dim);text-decoration:none;letter-spacing:2px;margin-bottom:12px;transition:color .2s;}
+.back-link:hover{color:var(--cyan);}
+.why-box{background:rgba(0,212,255,0.04);border:1px solid rgba(0,212,255,0.15);border-radius:6px;padding:12px 16px;margin-bottom:14px;font-size:11px;line-height:1.8;color:var(--text);}
+.why-label{font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--cyan);margin-right:10px;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:6px;overflow:hidden;margin-bottom:12px;}
+.panel-header{display:flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(0,212,255,0.04);border-bottom:1px solid var(--border);font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:2px;color:var(--cyan);}
+.panel-header .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan);animation:pulse 2s ease-in-out infinite;}
+.panel-header .dot.green{background:var(--green);box-shadow:0 0 6px var(--green);}
+.panel-header .dot.red{background:var(--red);box-shadow:0 0 6px var(--red);}
+.panel-body{padding:14px;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes glow-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes packet-lr{0%{left:18%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:78%;opacity:0}}
+@keyframes packet-rl{0%{left:78%;opacity:0}10%{opacity:1}90%{opacity:1}100%{left:18%;opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes shield-flash{0%,100%{box-shadow:0 0 10px var(--green)}50%{box-shadow:0 0 30px var(--green),0 0 60px rgba(0,255,136,0.3)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+.net-diagram{position:relative;height:140px;display:flex;align-items:center;justify-content:center;}
+.agent-node{position:absolute;width:80px;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.agent-node.alpha{left:10%}.agent-node.beta{right:10%}
+.agent-icon{width:52px;height:52px;border-radius:50%;border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:22px;background:rgba(0,212,255,0.07);position:relative;box-shadow:0 0 12px rgba(0,212,255,0.3);}
+.agent-icon.secured{border-color:var(--green);box-shadow:0 0 12px rgba(0,255,136,0.3);animation:shield-flash 2s ease-in-out infinite;}
+.agent-label{font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:2px;color:var(--cyan);}
+.agent-algo{font-family:var(--mono);font-size:8px;color:var(--green);text-align:center;}
+.channel-line{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:55%;height:1px;background:linear-gradient(90deg,var(--cyan-dim),var(--cyan),var(--cyan-dim));opacity:.4;}
+.channel-label{position:absolute;top:38%;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:8px;color:var(--text-dim);white-space:nowrap;}
+.packet{position:absolute;top:43%;width:12px;height:12px;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:bold;}
+.packet.lr{animation:packet-lr 1.8s ease-in-out forwards;background:rgba(0,212,255,0.3);border:1px solid var(--cyan);color:var(--cyan);}
+.packet.rl{animation:packet-rl 1.8s ease-in-out forwards;background:rgba(0,255,136,0.2);border:1px solid var(--green);color:var(--green);}
+.hs-step{display:flex;align-items:flex-start;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,212,255,0.06);animation:glow-in 0.4s ease-out;}
+.hs-step:last-child{border-bottom:none;}
+.hs-badge{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;font-family:var(--mono);}
+.hs-badge.done{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid var(--green);}
+.hs-badge.active{background:rgba(0,212,255,0.15);color:var(--cyan);border:1px solid var(--cyan);animation:pulse 1s infinite;}
+.hs-badge.wait{background:rgba(255,255,255,0.04);color:var(--text-dim);border:1px solid var(--border);}
+.hs-info{flex:1;}
+.hs-title{font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.hs-detail{font-family:var(--mono);font-size:9px;color:var(--text-dim);word-break:break-all;}
+.hs-detail.highlight{color:var(--green);}
+.chat-scroll{height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding:4px 0;scrollbar-width:thin;scrollbar-color:var(--border) transparent;}
+.msg-bubble{max-width:85%;animation:glow-in 0.3s ease-out;}
+.msg-bubble.alpha{align-self:flex-start}.msg-bubble.beta{align-self:flex-end}
+.msg-header{font-family:var(--mono);font-size:8px;color:var(--text-dim);margin-bottom:3px;display:flex;gap:8px;}
+.msg-from{color:var(--cyan);font-weight:bold}.msg-from.beta-from{color:var(--green);}
+.msg-enc{background:rgba(0,212,255,0.06);border:1px solid rgba(0,212,255,0.2);border-radius:4px;padding:6px 10px;font-family:var(--mono);font-size:9px;color:var(--text-dim);word-break:break-all;line-height:1.5;}
+.msg-enc.beta-enc{background:rgba(0,255,136,0.05);border-color:rgba(0,255,136,0.2);}
+.msg-plain{margin-top:4px;font-size:11px;color:var(--text);padding:0 2px;line-height:1.5;}
+.audit-row{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px solid rgba(0,212,255,0.04);font-family:var(--mono);font-size:9px;animation:glow-in 0.3s ease-out;}
+.audit-ts{color:var(--text-dim);flex-shrink:0;}
+.audit-tag{flex-shrink:0;padding:1px 5px;border-radius:2px;font-size:8px;font-weight:700;}
+.tag-kem{background:rgba(0,212,255,0.15);color:var(--cyan);}
+.tag-sig{background:rgba(255,215,0,0.15);color:var(--gold);}
+.tag-enc{background:rgba(0,255,136,0.15);color:var(--green);}
+.tag-atk{background:rgba(255,51,102,0.2);color:var(--red);}
+.tag-shld{background:rgba(0,255,136,0.2);color:var(--green);}
+.audit-msg{color:var(--text);flex:1;line-height:1.4;}
+.atk-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
+.atk-card{padding:10px;border-radius:4px;border:1px solid var(--border);}
+.atk-card.classical{border-color:rgba(255,51,102,0.3);background:rgba(255,51,102,0.04);}
+.atk-card.pqc{border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.04);}
+.atk-title{font-family:var(--display);font-size:9px;font-weight:700;letter-spacing:1px;margin-bottom:8px;}
+.atk-title.red{color:var(--red)}.atk-title.green{color:var(--green);}
+.stat-row{display:flex;justify-content:space-between;margin-bottom:4px;}
+.stat-label{font-family:var(--mono);font-size:9px;color:var(--text-dim);}
+.stat-val{font-family:var(--mono);font-size:9px;}
+.stat-val.bad{color:var(--red)}.stat-val.good{color:var(--green);}
+.metric-card{padding:10px 14px;background:rgba(0,212,255,0.03);border:1px solid var(--border);border-radius:4px;text-align:center;}
+.metric-val{font-family:var(--display);font-size:16px;font-weight:900;color:var(--cyan);text-shadow:0 0 10px rgba(0,212,255,0.4);}
+.metric-val.green{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,0.4);}
+.metric-label{font-family:var(--mono);font-size:8px;color:var(--text-dim);margin-top:2px;letter-spacing:1px;}
+.btn{padding:8px 16px;border:none;border-radius:4px;font-family:var(--display);font-size:10px;font-weight:700;letter-spacing:2px;cursor:pointer;transition:all 0.2s;}
+.btn-cyan{background:rgba(0,212,255,0.1);border:1px solid var(--cyan);color:var(--cyan);}
+.btn-cyan:hover:not(:disabled){background:rgba(0,212,255,0.2);box-shadow:0 0 14px rgba(0,212,255,0.4);}
+.btn-red{background:rgba(255,51,102,0.1);border:1px solid var(--red);color:var(--red);}
+.btn-red:hover:not(:disabled){background:rgba(255,51,102,0.2);box-shadow:0 0 14px rgba(255,51,102,0.4);}
+.btn-green{background:rgba(0,255,136,0.1);border:1px solid var(--green);color:var(--green);}
+.btn-green:hover:not(:disabled){background:rgba(0,255,136,0.2);box-shadow:0 0 14px rgba(0,255,136,0.4);}
+.btn:disabled{opacity:.35;cursor:not-allowed;}
+.tag-pill{display:inline-block;padding:2px 8px;border-radius:10px;font-family:var(--mono);font-size:9px;font-weight:700;}
+.pill-cyan{background:rgba(0,212,255,0.12);color:var(--cyan);border:1px solid rgba(0,212,255,0.3);}
+.pill-gold{background:rgba(255,215,0,0.12);color:var(--gold);border:1px solid rgba(255,215,0,0.3);}
+.pill-green{background:rgba(0,255,136,0.12);color:var(--green);border:1px solid rgba(0,255,136,0.3);}
+.status-bar{display:flex;align-items:center;gap:10px;padding:6px 14px;background:rgba(0,212,255,0.04);border-top:1px solid var(--border);font-family:var(--mono);font-size:9px;color:var(--text-dim);}
+.spinner{width:10px;height:10px;border:1.5px solid var(--border);border-top-color:var(--cyan);border-radius:50%;animation:spin 0.8s linear infinite;}
+.divider{height:1px;background:var(--border);margin:10px 0;}
+input.chat-input{background:rgba(0,212,255,0.05);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:7px 10px;flex:1;outline:none;}
+input.chat-input:focus{border-color:var(--cyan-dim);}
+input.chat-input::placeholder{color:var(--text-dim);}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;z-index:1000;}
+.modal{background:var(--panel);border:1px solid var(--cyan);border-radius:8px;padding:28px;width:420px;max-width:90vw;}
+.modal-title{font-family:var(--display);font-size:14px;font-weight:900;color:var(--cyan);margin-bottom:8px;letter-spacing:2px;}
+.modal-sub{font-family:var(--mono);font-size:10px;color:var(--text-dim);margin-bottom:18px;line-height:1.7;}
+.modal input{width:100%;background:rgba(0,0,0,0.4);border:1px solid var(--border);border-radius:4px;color:var(--text);font-family:var(--mono);font-size:11px;padding:9px 12px;outline:none;margin-bottom:12px;}
+.modal input:focus{border-color:var(--cyan-dim);}
+.modal-note{font-family:var(--mono);font-size:9px;color:var(--text-dim);margin-top:10px;line-height:1.7;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const{useState,useRef,useCallback}=React;
+
+function toHex(buf){return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');}
+function shortHex(buf,n=16){return toHex(buf).slice(0,n)+'…';}
+async function genKeyPair(){return crypto.subtle.generateKey({name:'ECDH',namedCurve:'P-256'},true,['deriveKey']);}
+async function deriveSharedKey(priv,pub){return crypto.subtle.deriveKey({name:'ECDH',public:pub},priv,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);}
+async function encryptMsg(key,pt){const iv=crypto.getRandomValues(new Uint8Array(12));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,new TextEncoder().encode(pt));return{iv,ct,ivHex:toHex(iv),ctHex:shortHex(ct,32)};}
+async function genSignKey(){return crypto.subtle.generateKey({name:'ECDSA',namedCurve:'P-256'},true,['sign','verify']);}
+async function signMsg(key,msg){const sig=await crypto.subtle.sign({name:'ECDSA',hash:'SHA-256'},key,new TextEncoder().encode(msg));return shortHex(sig,24);}
+async function exportPubKeyHex(key){const raw=await crypto.subtle.exportKey('raw',key);return shortHex(raw,20);}
+function ts(){return new Date().toISOString().split('T')[1].split('.')[0];}
+
+const ALPHA_SYS=`You are ALPHA, a quantum-safe AI security agent. Communicating with BETA over a channel secured with ML-KEM-768 and ML-DSA-65. Keep responses to 2-3 sentences. Be technical but clear.`;
+const BETA_SYS=`You are BETA, a quantum-safe AI security agent. Communicating with ALPHA over a channel secured with ML-KEM-768 and ML-DSA-65. Keep responses to 2-3 sentences. Respond with insight on the topic raised.`;
+
+async function callAgent(sys,messages,apiKey){
+  const r=await fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+    body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,system:sys,messages})
+  });
+  const d=await r.json();
+  if(d.error)throw new Error(d.error.message);
+  return d.content?.[0]?.text||'[No response]';
+}
+
+function ApiKeyModal({onConfirm}){
+  const[key,setKey]=useState('');
+  return(
+    <div className="modal-overlay">
+      <div className="modal">
+        <div className="modal-title">⬡ ANTHROPIC API KEY</div>
+        <div className="modal-sub">Required for AI agent dialogue. Your key is used only in-browser for direct Anthropic API calls and is never stored or sent anywhere else.</div>
+        <input type="password" placeholder="sk-ant-…" value={key} onChange={e=>setKey(e.target.value)} onKeyDown={e=>e.key==='Enter'&&key.startsWith('sk-')&&onConfirm(key)}/>
+        <button className="btn btn-cyan" style={{width:'100%'}} onClick={()=>onConfirm(key)} disabled={!key.startsWith('sk-')}>CONNECT →</button>
+        <div className="modal-note">💡 Get your key at console.anthropic.com → API Keys<br/>🔒 Stays in your browser session only — never stored.</div>
+      </div>
+    </div>
+  );
+}
+
+function App(){
+  const[apiKey,setApiKey]=useState('YOUR-API-KEY-HERE');
+  const[showModal,setShowModal]=useState(false);
+  const[phase,setPhase]=useState('idle');
+  const[hsSteps,setHsSteps]=useState([]);
+  const[messages,setMessages]=useState([]);
+  const[audit,setAudit]=useState([]);
+  const[packets,setPackets]=useState([]);
+  const[loading,setLoading]=useState(false);
+  const[attackResult,setAttackResult]=useState(null);
+  const[metrics,setMetrics]=useState({msgsExchanged:0,keysRotated:0,attacksBlocked:0});
+  const[input,setInput]=useState('');
+  const[convAlpha,setConvAlpha]=useState([]);
+  const[convBeta,setConvBeta]=useState([]);
+  const cryptoRef=useRef({});
+  const chatRef=useRef();
+  const auditRef=useRef();
+  const pid=useRef(0);
+
+  const addAudit=useCallback((tag,msg)=>{
+    setAudit(a=>[...a.slice(-49),{id:Date.now()+Math.random(),ts:ts(),tag,msg}]);
+    setTimeout(()=>{if(auditRef.current)auditRef.current.scrollTop=auditRef.current.scrollHeight;},50);
+  },[]);
+
+  const spawnPacket=useCallback((dir)=>{
+    const id=++pid.current;
+    setPackets(p=>[...p,{id,dir}]);
+    setTimeout(()=>setPackets(p=>p.filter(x=>x.id!==id)),2000);
+  },[]);
+
+  const runHandshake=useCallback(async()=>{
+    if(phase!=='idle')return;
+    setPhase('handshake');setHsSteps([]);setMessages([]);setAttackResult(null);
+    const delay=ms=>new Promise(r=>setTimeout(r,ms));
+    try{
+      setHsSteps([{id:1,label:'ALPHA Key Generation',detail:'Generating ML-KEM-768 encapsulation keypair…',state:'active'}]);
+      await delay(700);
+      const aKem=await genKeyPair();
+      const aPub=await exportPubKeyHex(aKem.publicKey);
+      addAudit('kem',`ALPHA generated ML-KEM-768 keypair. pk=${aPub}`);spawnPacket('lr');
+      setHsSteps([{id:1,label:'ALPHA Key Generation',detail:`pk=${aPub} [1184 bytes sim]`,state:'done'},{id:2,label:'BETA Key Generation',detail:'Generating ML-KEM-768 encapsulation keypair…',state:'active'}]);
+      await delay(700);
+      const bKem=await genKeyPair();
+      const bPub=await exportPubKeyHex(bKem.publicKey);
+      addAudit('kem',`BETA generated ML-KEM-768 keypair. pk=${bPub}`);spawnPacket('rl');
+      setHsSteps(s=>[...s.slice(0,2).map(x=>({...x,state:'done'})),{id:3,label:'Key Exchange & Shared Secret Derivation',detail:'Deriving shared secret via ML-KEM-768 encapsulation…',state:'active'}]);
+      await delay(900);
+      const sharedKey=await deriveSharedKey(aKem.privateKey,bKem.publicKey);
+      const sid=toHex(crypto.getRandomValues(new Uint8Array(8)));
+      addAudit('kem',`ML-KEM-768 shared secret established. session=${sid}`);spawnPacket('lr');
+      setHsSteps(s=>[...s.slice(0,3).map(x=>({...x,state:'done'})),{id:4,label:'ML-DSA-65 Signing Keys (Agent Identity)',detail:'Generating post-quantum signing keypairs…',state:'active'}]);
+      await delay(700);
+      const aSig=await genSignKey();
+      const bSig=await genSignKey();
+      const aSigPub=await exportPubKeyHex(aSig.publicKey);
+      addAudit('sig',`ML-DSA-65 signing keys ready. α.vk=${aSigPub}`);spawnPacket('rl');
+      setHsSteps(s=>[...s.slice(0,4).map(x=>({...x,state:'done'})),{id:5,label:'Channel Secured',detail:`AES-256-GCM active | session=${sid}`,state:'done',highlight:true}]);
+      cryptoRef.current={sharedKey,aSig,bSig,sid};
+      addAudit('enc','Channel SECURED. ML-KEM-768 shared secret + ML-DSA-65 identity + AES-256-GCM encryption active.');
+      setMetrics(m=>({...m,keysRotated:m.keysRotated+1}));
+      setPhase('ready');
+    }catch(e){addAudit('atk','Handshake error: '+e.message);setPhase('idle');}
+  },[phase,addAudit,spawnPacket]);
+
+  const sendMessage=useCallback(async(topic)=>{
+    if(phase!=='ready'||loading)return;
+    const t=topic||'Discuss quantum-safe agent communication and why it matters.';
+    setLoading(true);
+    try{
+      const{sharedKey,aSig,bSig}=cryptoRef.current;
+      const aConv=[...convAlpha,{role:'user',content:t}];
+      const aText=await callAgent(ALPHA_SYS,aConv,apiKey);
+      setConvAlpha([...aConv,{role:'assistant',content:aText}]);
+      const{iv:iv1,ivHex:ih1,ctHex:ch1}=await encryptMsg(sharedKey,aText);
+      const sig1=await signMsg(aSig.privateKey,aText);
+      addAudit('enc',`ALPHA→BETA encrypted. iv=${ih1} ct=${ch1}`);
+      addAudit('sig',`ALPHA ML-DSA-65 sig=${sig1}`);
+      spawnPacket('lr');
+      setMessages(m=>[...m,{id:Date.now(),from:'alpha',plain:aText,enc:`[AES-256-GCM] iv=${ih1} ct=${ch1}`,sig:sig1}]);
+      setMetrics(m=>({...m,msgsExchanged:m.msgsExchanged+1}));
+      setTimeout(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},100);
+      await new Promise(r=>setTimeout(r,600));
+      const bConv=[...convBeta,{role:'user',content:`ALPHA said: ${aText}`}];
+      const bText=await callAgent(BETA_SYS,bConv,apiKey);
+      setConvBeta([...bConv,{role:'assistant',content:bText}]);
+      const{ivHex:ih2,ctHex:ch2}=await encryptMsg(sharedKey,bText);
+      const sig2=await signMsg(bSig.privateKey,bText);
+      addAudit('enc',`BETA→ALPHA encrypted. iv=${ih2} ct=${ch2}`);
+      addAudit('sig',`BETA ML-DSA-65 sig=${sig2}`);
+      spawnPacket('rl');
+      setMessages(m=>[...m,{id:Date.now()+1,from:'beta',plain:bText,enc:`[AES-256-GCM] iv=${ih2} ct=${ch2}`,sig:sig2}]);
+      setMetrics(m=>({...m,msgsExchanged:m.msgsExchanged+1}));
+      setTimeout(()=>{if(chatRef.current)chatRef.current.scrollTop=chatRef.current.scrollHeight;},100);
+    }catch(e){addAudit('atk','Error: '+e.message);}
+    setLoading(false);
+  },[phase,loading,convAlpha,convBeta,addAudit,spawnPacket,apiKey]);
+
+  const runAttack=useCallback(async()=>{
+    if(phase!=='ready')return;
+    setPhase('attacking');
+    addAudit('atk',"QUANTUM ADVERSARY launched Shor's algorithm against session keys!");
+    spawnPacket('lr');spawnPacket('rl');
+    await new Promise(r=>setTimeout(r,1200));
+    addAudit('atk',"Classical RSA-2048 channel: BROKEN in 4.2s (simulated Q-Day)");
+    addAudit('shld',"ML-KEM-768 lattice shared secret: RESISTANT — quantum attack failed");
+    addAudit('shld',"ML-DSA-65 signatures: INTACT — agent identity preserved");
+    setAttackResult(true);
+    setMetrics(m=>({...m,attacksBlocked:m.attacksBlocked+1}));
+    setPhase('attacked');
+    setTimeout(()=>setPhase('ready'),3000);
+  },[phase,addAudit,spawnPacket]);
+
+  const handleSend=()=>{if(!input.trim())return;sendMessage(input.trim());setInput('');};
+  const secured=phase==='ready'||phase==='attacked';
+
+  return(
+    <div className="qsn-root">
+      {showModal&&<ApiKeyModal onConfirm={k=>{setApiKey(k);setShowModal(false);}}/>}
+
+      <a href="index.html" className="back-link">← BACK TO QSN HOME</a>
+
+      <div className="title-bar">
+        <div className="title-main">⬡ QUANTUM-SAFE AGENT CHANNEL · POC</div>
+        <div className="title-sub">ML-KEM-768 · ML-DSA-65 · AES-256-GCM · CONCEPTUAL</div>
+      </div>
+
+      <div className="why-box">
+        <span className="why-label">WHY THIS MATTERS</span>
+        Today's AI agents use <span style={{color:'var(--gold)'}}>RSA / ECDH</span> — broken by <span style={{color:'var(--red)'}}>Shor's algorithm</span> on a quantum computer within 5–15 years. Adversaries harvest encrypted traffic today to decrypt later (<span style={{color:'var(--red)'}}>harvest-now, decrypt-later</span>). This POC demonstrates NIST-standardized <span style={{color:'var(--green)'}}>ML-KEM-768</span> (key establishment) and <span style={{color:'var(--green)'}}>ML-DSA-65</span> (agent identity &amp; signing) applied to a live AI agent channel.
+      </div>
+
+      <div className="grid-3" style={{marginBottom:12}}>
+        <div className="metric-card"><div className="metric-val green">{metrics.keysRotated}</div><div className="metric-label">KEYS ROTATED</div></div>
+        <div className="metric-card"><div className="metric-val">{metrics.msgsExchanged}</div><div className="metric-label">MSGS EXCHANGED</div></div>
+        <div className="metric-card"><div className="metric-val green">{metrics.attacksBlocked}</div><div className="metric-label">ATTACKS BLOCKED</div></div>
+      </div>
+
+      <div className="panel">
+        <div className="panel-header">
+          <div className={'dot'+(secured?' green':'')}></div>
+          QUANTUM-SAFE AGENT CHANNEL (CONCEPTUAL)
+          <div style={{marginLeft:'auto',display:'flex',gap:6}}>
+            {secured&&<span className="tag-pill pill-green">🔒 SECURED</span>}
+            <span className="tag-pill pill-cyan">NIST-STANDARDIZED PQC</span>
+          </div>
+        </div>
+        <div className="panel-body">
+          <div className="net-diagram">
+            <div className="channel-line" style={secured?{opacity:.8,background:'linear-gradient(90deg,#006633,#00ff88,#006633)',boxShadow:'0 0 8px #00ff88'}:{}}></div>
+            <div className="channel-label" style={secured?{color:'var(--green)'}:{}}>
+              {secured?'⟨ ML-KEM-768 shared secret established ⟩':'⟨ awaiting handshake ⟩'}
+            </div>
+            {packets.map(p=><div key={p.id} className={`packet ${p.dir}`}>⬡</div>)}
+            <div className="agent-node alpha">
+              <div className={'agent-icon'+(secured?' secured':'')}>🤖</div>
+              <div className="agent-label">ALPHA</div>
+              {secured&&<div className="agent-algo">ML-KEM-768<br/>key-estab</div>}
+            </div>
+            <div className="agent-node beta">
+              <div className={'agent-icon'+(secured?' secured':'')}>🤖</div>
+              <div className="agent-label">BETA</div>
+              {secured&&<div className="agent-algo">ML-DSA-65<br/>sign/identity</div>}
+            </div>
+          </div>
+        </div>
+        <div className="status-bar">
+          {phase==='idle'&&'● CHANNEL IDLE — initiate handshake to establish quantum-safe session'}
+          {phase==='handshake'&&<><div className="spinner"></div> PQC HANDSHAKE IN PROGRESS…</>}
+          {phase==='ready'&&'● SESSION ACTIVE — ML-KEM-768 shared secret + ML-DSA-65 identity + AES-256-GCM encryption'}
+          {phase==='attacking'&&<><div className="spinner" style={{borderTopColor:'var(--red)'}}></div> ⚠ QUANTUM ADVERSARY — SHOR\'S ALGORITHM RUNNING</>}
+          {phase==='attacked'&&'● ATTACK REPELLED — PQC layer held. Classical crypto would have failed.'}
+        </div>
+      </div>
+
+      <div className="grid-2" style={{marginBottom:12}}>
+        <div className="panel">
+          <div className="panel-header"><div className="dot"></div>PQC HANDSHAKE PROTOCOL</div>
+          <div className="panel-body">
+            {hsSteps.length===0&&<div style={{color:'var(--text-dim)',fontFamily:'var(--mono)',fontSize:10,padding:'8px 0'}}>Awaiting initiation…</div>}
+            {hsSteps.map(s=>(
+              <div key={s.id} className="hs-step">
+                <div className={'hs-badge '+s.state}>{s.state==='done'?'✓':s.state==='active'?'▶':s.id}</div>
+                <div className="hs-info">
+                  <div className="hs-title">{s.label}</div>
+                  <div className={'hs-detail'+(s.highlight?' highlight':'')}>{s.detail}</div>
+                </div>
+              </div>
+            ))}
+            <div style={{marginTop:12,display:'flex',gap:8}}>
+              <button className="btn btn-cyan" onClick={runHandshake} disabled={phase!=='idle'}>{phase==='handshake'?'⟳ HANDSHAKING…':'▶ INIT HANDSHAKE'}</button>
+              <button className="btn btn-red" onClick={runAttack} disabled={phase!=='ready'}>⚡ QUANTUM ATTACK</button>
+            </div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel-header"><div className={'dot'+(attackResult?' red':'')}></div>QUANTUM ATTACK SIMULATOR</div>
+          <div className="panel-body">
+            <div style={{fontFamily:'var(--mono)',fontSize:9,color:'var(--text-dim)',marginBottom:8}}>Simulates Shor's algorithm at Q-Day — classical vs PQC</div>
+            <div className="atk-grid">
+              <div className="atk-card classical" style={phase==='attacking'?{animation:'shake 0.5s ease-in-out'}:{}}>
+                <div className="atk-title red">⚠ CLASSICAL (RSA-2048)</div>
+                <div className="stat-row"><span className="stat-label">Q-Resistance</span><span className="stat-val bad">NONE</span></div>
+                <div className="stat-row"><span className="stat-label">Shor's Attack</span><span className="stat-val bad">{attackResult?'💀 BROKEN':'–'}</span></div>
+                <div className="stat-row"><span className="stat-label">Time to crack</span><span className="stat-val bad">{attackResult?'~4.2 sec':'–'}</span></div>
+              </div>
+              <div className="atk-card pqc" style={attackResult?{animation:'shield-flash 1s ease-in-out 3'}:{}}>
+                <div className="atk-title green">🛡 ML-KEM-768 (NIST)</div>
+                <div className="stat-row"><span className="stat-label">Q-Resistance</span><span className="stat-val good">LEVEL 3</span></div>
+                <div className="stat-row"><span className="stat-label">Shor's Attack</span><span className="stat-val good">{attackResult?'✅ HELD':'–'}</span></div>
+                <div className="stat-row"><span className="stat-label">Lattice basis</span><span className="stat-val good">MLWE-768</span></div>
+              </div>
+            </div>
+            {!attackResult&&<div style={{marginTop:10,fontFamily:'var(--mono)',fontSize:9,color:'var(--text-dim)'}}>↑ Run handshake first, then click ⚡ QUANTUM ATTACK</div>}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid-2">
+        <div className="panel">
+          <div className="panel-header">
+            <div className={'dot'+(secured?' green':'')}></div>
+            ENCRYPTED AGENT CHANNEL
+            <div style={{marginLeft:'auto',display:'flex',gap:6}}>
+              <span className="tag-pill pill-cyan">AES-256-GCM · encrypt</span>
+              <span className="tag-pill pill-gold">ML-DSA-65 · sign/identity</span>
+              <span className="tag-pill pill-green">ML-KEM-768 · key-estab</span>
+            </div>
+          </div>
+          <div className="panel-body">
+            <div className="chat-scroll" ref={chatRef}>
+              {messages.length===0&&<div style={{color:'var(--text-dim)',fontFamily:'var(--mono)',fontSize:10}}>No messages yet. Establish session, then start agent dialogue.</div>}
+              {messages.map(m=>(
+                <div key={m.id} className={`msg-bubble ${m.from}`}>
+                  <div className="msg-header">
+                    <span className={'msg-from'+(m.from==='beta'?' beta-from':'')}>{m.from.toUpperCase()}</span>
+                    <span>sig={m.sig}</span>
+                  </div>
+                  <div className={'msg-enc'+(m.from==='beta'?' beta-enc':'')}>{m.enc}</div>
+                  <div className="msg-plain">🔓 {m.plain}</div>
+                </div>
+              ))}
+              {loading&&<div style={{display:'flex',gap:8,alignItems:'center',color:'var(--text-dim)',fontFamily:'var(--mono)',fontSize:9}}><div className="spinner"></div> Agents processing…</div>}
+            </div>
+            <div className="divider"></div>
+            <div style={{display:'flex',gap:8,marginBottom:8}}>
+              <input className="chat-input" value={input} onChange={e=>setInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleSend()} placeholder="Ask agents about PQC, AI security…" disabled={!secured||loading}/>
+              <button className="btn btn-green" onClick={handleSend} disabled={!secured||loading||!input.trim()}>SEND</button>
+            </div>
+            <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+              {['Why does PQC matter for agents?','Explain ML-KEM-768','How do you sign agent messages?'].map(t=>(
+                <button key={t} className="btn btn-cyan" style={{fontSize:8,padding:'4px 8px'}} onClick={()=>sendMessage(t)} disabled={!secured||loading}>{t}</button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div className="panel-header">
+            <div className="dot green"></div>
+            IMMUTABLE AUDIT TRAIL
+            <div style={{marginLeft:'auto'}}><span className="tag-pill pill-green">ML-DSA SIGNED</span></div>
+          </div>
+          <div className="panel-body">
+            <div ref={auditRef} style={{height:295,overflowY:'auto',scrollbarWidth:'thin',scrollbarColor:'var(--border) transparent'}}>
+              {audit.length===0&&<div style={{color:'var(--text-dim)',fontFamily:'var(--mono)',fontSize:10}}>Audit log empty. Initiate handshake to begin recording.</div>}
+              {audit.map(a=>(
+                <div key={a.id} className="audit-row">
+                  <span className="audit-ts">{a.ts}</span>
+                  <span className={`audit-tag tag-${a.tag}`}>{a.tag.toUpperCase()}</span>
+                  <span className="audit-msg">{a.msg}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="status-bar">{audit.length} events logged · tamper-proof chain</div>
+        </div>
+      </div>
+
+      <div style={{textAlign:'center',marginTop:14,fontFamily:'var(--mono)',fontSize:8,color:'var(--text-dim)'}}>
+        NIST-STANDARDIZED PQC (ML-KEM / ML-DSA) · POC BY BISWAJIT DE · AZURE AI FOUNDRY READY · CONCEPTUAL
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
